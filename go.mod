@@ -1,9 +1,10 @@
 module github.com/atinyakov/go-musthave-diploma
 
-go 1.23.7
+go 1.22.0
 
 require (
 	github.com/go-chi/chi/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	gopkg.in/eapache/go-resiliency.v1 v1.2.0
@@ -12,8 +13,6 @@ require (
 )
 
 require (
-	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 // indirect
-	golang.org/x/crypto v0.36.0
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
 )

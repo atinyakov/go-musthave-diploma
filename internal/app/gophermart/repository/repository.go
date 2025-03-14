@@ -90,7 +90,7 @@ func (r *Repository) CreateOrder(orderNumber int, username string, status models
 func (r *Repository) GetOrdersByStatus(ctx context.Context, status models.OrderStatus) ([]models.Order, error) {
 	rows, err := r.db.QueryContext(ctx, "SELECT number, username, status, accrual, uploaded_at FROM orders WHERE status = $1", status)
 	if err != nil {
-		fmt.Errorf("GetOrdersByStatus error=%s", err.Error())
+		fmt.Printf("GetOrdersByStatus error=%s", err.Error())
 		return []models.Order{}, nil
 	}
 	defer rows.Close()
@@ -102,7 +102,7 @@ func (r *Repository) GetOrdersByStatus(ctx context.Context, status models.OrderS
 
 		err := rows.Scan(&order.Number, &order.Username, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
-			fmt.Errorf("GetOrdersByStatus error=%s", err.Error())
+			fmt.Printf("GetOrdersByStatus error=%s", err.Error())
 			return nil, nil
 		}
 
@@ -120,7 +120,7 @@ func (r *Repository) GetOrdersByStatus(ctx context.Context, status models.OrderS
 func (r *Repository) GetOrdersByUsername(ctx context.Context, username string) ([]models.Order, error) {
 	rows, err := r.db.QueryContext(ctx, "SELECT number, username, status, accrual, uploaded_at FROM orders WHERE username = $1", username)
 	if err != nil {
-		fmt.Errorf("GetOrdersByUsername error=%s", err.Error())
+		fmt.Printf("GetOrdersByUsername error=%s", err.Error())
 		return []models.Order{}, nil
 	}
 	defer rows.Close()
@@ -132,7 +132,7 @@ func (r *Repository) GetOrdersByUsername(ctx context.Context, username string) (
 
 		err := rows.Scan(&order.Number, &order.Username, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
-			fmt.Errorf("GetOrdersByStatus error=%s", err.Error())
+			fmt.Printf("GetOrdersByStatus error=%s", err.Error())
 			return nil, nil
 		}
 
@@ -158,7 +158,7 @@ func (r *Repository) UpdateOrders(ctx context.Context, os []models.Order) error 
 		if err != nil {
 			// r.logger.Error("ROLLBACK error=", zap.String("error", err.Error()))
 			// return err
-			fmt.Errorf(err.Error())
+			fmt.Println(err.Error())
 		}
 	}()
 
