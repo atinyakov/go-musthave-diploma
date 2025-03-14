@@ -73,7 +73,7 @@ func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers in
 		go func() {
 			defer wg.Done()
 
-			var messages []models.Order
+			// var messages []models.Order
 
 			for {
 				select {
@@ -83,15 +83,15 @@ func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers in
 				case msg := <-s.in:
 					fmt.Println("Worker GOT NEW ORDER...")
 
-					orderResponse, err := s.client.Request(msg.Number)
+					_, err := s.client.Request(msg.Number)
 					if err != nil {
 						fmt.Printf("Failed to update order %s: %s\n", msg.Number, err)
 						continue
 					}
 
-					if orderResponse != nil {
-						messages = append(messages, *orderResponse)
-					}
+					// if orderResponse != nil {
+					// 	messages = append(messages, *orderResponse)
+					// }
 				}
 			}
 		}()

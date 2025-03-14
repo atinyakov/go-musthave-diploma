@@ -15,12 +15,12 @@ type AccrualClient struct {
 	cli *gentleman.Client
 }
 
-func New(baseUrl string) *AccrualClient {
+func New(baseURL string) *AccrualClient {
 	// Create a new client
 	cli := gentleman.New()
 
 	// Define base URL
-	cli.URL(baseUrl)
+	cli.URL(baseURL)
 
 	// Register the retry plugin, using a custom exponential retry strategy
 	cli.Use(retry.New(retrier.New(retrier.ExponentialBackoff(3, 100*time.Millisecond), nil)))

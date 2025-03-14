@@ -62,6 +62,17 @@ func (ph *PostHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Generate JWT
+	token, err := auth.GenerateJWT(reqData.Login)
+	if err != nil {
+		http.Error(w, "Error generating token", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with token
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
+
 	w.WriteHeader(http.StatusOK)
 
 }

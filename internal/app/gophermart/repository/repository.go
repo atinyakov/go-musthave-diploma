@@ -188,7 +188,7 @@ func (r *Repository) GetOrdersByID() {
 	// return true, nil
 }
 
-func (r *Repository) GetWithdrawalsById() {
+func (r *Repository) GetWithdrawalsByID() {
 	// return true, nil
 }
 

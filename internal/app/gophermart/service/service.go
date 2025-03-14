@@ -15,7 +15,7 @@ type Repository interface {
 	Login(string) (string, error)
 	CreateOrder(orderNumber int, username string, status models.OrderStatus) (*models.Order, bool, error)
 	GetOrdersByUsername(ctx context.Context, username string) ([]models.Order, error)
-	GetWithdrawalsById()
+	GetWithdrawalsByID()
 }
 
 type Service struct {
@@ -26,9 +26,9 @@ func New(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-var ErrInvalidLuhn = errors.New("Order is invalid")
-var ErrExists = errors.New("Order already exists")
-var ErrNotBelongsToUser = errors.New("Order is created by another user")
+var ErrInvalidLuhn = errors.New("order is invalid")
+var ErrExists = errors.New("order already exists")
+var ErrNotBelongsToUser = errors.New("order is created by another user")
 
 func (r *Service) Register(login string, password string) error {
 	hashedPassword, err := auth.HashPassword(password)
