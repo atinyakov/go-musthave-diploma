@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -71,7 +70,9 @@ func (ph *PostHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Respond with token
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
+	w.Header().Set("Authorization", "Bearer "+token)
+
+	// _ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 
 	w.WriteHeader(http.StatusOK)
 
@@ -113,7 +114,8 @@ func (ph *PostHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 		// Respond with token
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
+		w.Header().Set("Authorization", "Bearer "+token)
+		// _ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 
 		w.WriteHeader(http.StatusOK)
 		return
