@@ -3,7 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"strconv"
+	"time"
 
+	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/dto"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/models"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/repository"
 	"github.com/atinyakov/go-musthave-diploma/pkg/auth"
@@ -13,9 +16,10 @@ import (
 type Repository interface {
 	CreateUser(string, string) error
 	Login(string) (string, error)
-	CreateOrder(orderNumber int, username string, status models.OrderStatus) (*models.Order, bool, error)
+	CreateOrder(context.Context, models.Order) (*models.Order, bool, error)
 	GetOrdersByUsername(ctx context.Context, username string) ([]models.Order, error)
-	GetWithdrawalsByID()
+	GetWithdrawalsByUsername(ctx context.Context, username string) ([]models.Order, error)
+	GetUserBalanceAndWithdrawals(ctx context.Context, username string) (float64, float64, error)
 }
 
 type Service struct {
@@ -71,7 +75,10 @@ func (r *Service) CreateOrder(orderNumber int, username string) error {
 		return ErrInvalidLuhn
 	}
 
-	order, exists, err := r.repo.CreateOrder(orderNumber, username, models.StatusNew)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	order, exists, err := r.repo.CreateOrder(ctx, models.Order{Number: strconv.Itoa(orderNumber), Username: username, Status: models.StatusNew, Accrual: 0})
 
 	if exists {
 		if order.Username == username {
@@ -86,19 +93,59 @@ func (r *Service) CreateOrder(orderNumber int, username string) error {
 		return err
 	}
 
-	// TODO: sent to accuralservice
-
 	return nil
 }
 
-func (r *Service) GetOrdersByUsername(ctx context.Context, username string) ([]models.Order, error) {
+func (r *Service) GetOrdersByUsername(username string) ([]models.Order, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	return r.repo.GetOrdersByUsername(ctx, username)
 }
 
-func (r *Service) GetWithdrawals(string, string) (bool, error) {
-	return true, nil
+func (r *Service) CreateWidthraw(req dto.WithdrawalRequest, username string) error {
+	isValid := luhn.Valid(req.Order)
+
+	if !isValid {
+		return ErrInvalidLuhn
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, _, err := r.repo.CreateOrder(ctx, models.Order{Number: strconv.Itoa(req.Order), Username: username, Accrual: -float64(req.Sum)})
+
+	return err
 }
 
-func (r *Service) GetBalance(string, string) (bool, error) {
-	return true, nil
+func (r *Service) GetBalance(username string) (dto.BalanceResponce, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	balance, widthdraw, err := r.repo.GetUserBalanceAndWithdrawals(ctx, username)
+	if err != nil {
+		return dto.BalanceResponce{}, err
+	}
+
+	return dto.BalanceResponce{Current: float32(balance), Withdrawn: int(widthdraw)}, nil
+}
+
+func (r *Service) GetWithdrawals(username string) ([]dto.WithdrawalResponceItem, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	widthdrawals, err := r.repo.GetWithdrawalsByUsername(ctx, username)
+
+	if err != nil {
+		return []dto.WithdrawalResponceItem{}, err
+	}
+
+	var res []dto.WithdrawalResponceItem
+
+	for _, w := range widthdrawals {
+		order, _ := strconv.Atoi(w.Number)
+		res = append(res, dto.WithdrawalResponceItem{ProcessedAt: w.UploadedAt, Order: order, Sum: int(w.Accrual)})
+	}
+
+	return res, nil
 }

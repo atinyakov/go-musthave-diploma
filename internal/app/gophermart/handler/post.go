@@ -7,20 +7,17 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/dto"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/repository"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/service"
 	"github.com/atinyakov/go-musthave-diploma/pkg/auth"
 )
 
-type UserRequest struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
-}
-
 type ServicePost interface {
 	Register(string, string) error
 	Login(string, string) (bool, error)
 	CreateOrder(int, string) error
+	CreateWidthraw(dto.WithdrawalRequest, string) error
 }
 
 type PostHandler struct {
@@ -34,7 +31,7 @@ func NewPost(service ServicePost) *PostHandler {
 }
 
 func (ph *PostHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var reqData UserRequest
+	var reqData dto.UserRequest
 
 	err := decodeJSONBody(w, r, &reqData)
 	if err != nil {
@@ -61,25 +58,21 @@ func (ph *PostHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate JWT
 	token, err := auth.GenerateJWT(reqData.Login)
 	if err != nil {
 		http.Error(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
 
-	// Respond with token
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Authorization", "Bearer "+token)
-
-	// _ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 
 	w.WriteHeader(http.StatusOK)
 
 }
 
 func (ph *PostHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var reqData UserRequest
+	var reqData dto.UserRequest
 
 	err := decodeJSONBody(w, r, &reqData)
 	if err != nil {
@@ -88,7 +81,7 @@ func (ph *PostHandler) Login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, mr.msg, mr.status)
 			return
 		}
-		// h.logger.Error(err.Error())
+
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 
 		return
@@ -115,7 +108,6 @@ func (ph *PostHandler) Login(w http.ResponseWriter, r *http.Request) {
 		// Respond with token
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Authorization", "Bearer "+token)
-		// _ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 
 		w.WriteHeader(http.StatusOK)
 		return
@@ -126,8 +118,6 @@ func (ph *PostHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 func (ph *PostHandler) Orders(w http.ResponseWriter, r *http.Request) {
 	username := r.Header.Get("X-User")
-
-	// var orderNumber int
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -146,18 +136,18 @@ func (ph *PostHandler) Orders(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	if err != service.ErrExists {
+	if err == service.ErrExists {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	if err != service.ErrNotBelongsToUser {
+	if err == service.ErrNotBelongsToUser {
 		http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
 
 		return
 	}
 
-	if err != service.ErrNotBelongsToUser {
+	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 
 		return
@@ -167,7 +157,9 @@ func (ph *PostHandler) Orders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ph *PostHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
-	var reqData UserRequest
+	username := r.Header.Get("X-User")
+
+	var reqData dto.WithdrawalRequest
 
 	err := decodeJSONBody(w, r, &reqData)
 	if err != nil {
@@ -176,13 +168,12 @@ func (ph *PostHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, mr.msg, mr.status)
 			return
 		}
-		// h.logger.Error(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 
 		return
 	}
 
-	ok, err := ph.service.Login(reqData.Login, reqData.Password)
+	err = ph.service.CreateWidthraw(reqData, username)
 
 	if err != nil {
 		w.WriteHeader(422)
@@ -190,11 +181,5 @@ func (ph *PostHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok {
-		w.WriteHeader(404)
-		_, _ = w.Write([]byte("article not found"))
-		return
-	}
-	// w.Write([]byte(article.Text()))
 	w.WriteHeader(http.StatusAccepted)
 }

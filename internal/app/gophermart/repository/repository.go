@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/models"
@@ -51,10 +52,10 @@ func (r *Repository) Login(username string) (string, error) {
 	return hashedPassword, nil
 }
 
-func (r *Repository) CreateOrder(orderNumber int, username string, status models.OrderStatus) (*models.Order, bool, error) {
+func (r *Repository) CreateOrder(ctx context.Context, newOrder models.Order) (*models.Order, bool, error) {
 	// Check if the order already exists
 	var exists bool
-	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM orders WHERE number = $1)", orderNumber).Scan(&exists)
+	err := r.db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM orders WHERE number = $1)", newOrder.Number).Scan(&exists)
 	if err != nil {
 		return nil, false, err
 	}
@@ -62,7 +63,7 @@ func (r *Repository) CreateOrder(orderNumber int, username string, status models
 	if exists {
 		// If the order exists, fetch the existing order details
 		var order models.Order
-		err := r.db.QueryRow("SELECT number, username, status, accrual, uploaded_at FROM orders WHERE number = $1", orderNumber).
+		err := r.db.QueryRowContext(ctx, "SELECT number, username, status, accrual, uploaded_at FROM orders WHERE number = $1", newOrder.Number).
 			Scan(&order.Number, &order.Username, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
 			return nil, true, err
@@ -71,20 +72,20 @@ func (r *Repository) CreateOrder(orderNumber int, username string, status models
 	}
 
 	// If the order doesn't exist, insert a new order into the `orders` table
-	_, err = r.db.Exec("INSERT INTO orders (number, username, status) VALUES ($1, $2, $3)", orderNumber, username, status)
+	_, err = r.db.ExecContext(ctx, "INSERT INTO orders (number, username, status, accrual) VALUES ($1, $2, $3, $4)", newOrder.Number, newOrder.Username, newOrder.Status, newOrder.Accrual)
 	if err != nil {
 		return nil, false, err
 	}
 
 	// Return the newly created order
-	newOrder := &models.Order{
-		Username:   username,
-		Number:     fmt.Sprintf("%d", orderNumber),
-		Status:     status,
+	createdOrder := &models.Order{
+		Username:   newOrder.Username,
+		Number:     newOrder.Number,
+		Status:     newOrder.Status,
 		UploadedAt: time.Now(), // Set the uploaded_at field to the current time
 	}
 
-	return newOrder, false, nil
+	return createdOrder, false, nil
 }
 
 func (r *Repository) GetOrdersByStatus(ctx context.Context, status models.OrderStatus) ([]models.Order, error) {
@@ -103,7 +104,7 @@ func (r *Repository) GetOrdersByStatus(ctx context.Context, status models.OrderS
 		err := rows.Scan(&order.Number, &order.Username, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
 			fmt.Printf("GetOrdersByStatus error=%s", err.Error())
-			return nil, nil
+			return nil, err
 		}
 
 		res = append(res, order)
@@ -132,8 +133,8 @@ func (r *Repository) GetOrdersByUsername(ctx context.Context, username string) (
 
 		err := rows.Scan(&order.Number, &order.Username, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
-			fmt.Printf("GetOrdersByStatus error=%s", err.Error())
-			return nil, nil
+			fmt.Printf("GetOrdersByUsername error=%s", err.Error())
+			return nil, err
 		}
 
 		res = append(res, order)
@@ -144,7 +145,6 @@ func (r *Repository) GetOrdersByUsername(ctx context.Context, username string) (
 	}
 
 	return res, nil
-
 }
 
 func (r *Repository) UpdateOrders(ctx context.Context, os []models.Order) error {
@@ -188,10 +188,59 @@ func (r *Repository) GetOrdersByID() {
 	// return true, nil
 }
 
-func (r *Repository) GetWithdrawalsByID() {
-	// return true, nil
+func (r *Repository) GetWithdrawalsByUsername(ctx context.Context, username string) ([]models.Order, error) {
+	query := `
+	SELECT number, username, status, accrual, uploaded_at 
+	FROM orders 
+	WHERE username = $1 AND accrual < 0 
+	ORDER BY uploaded_at DESC;`
+
+	rows, err := r.db.QueryContext(ctx, query, username)
+	if err != nil {
+		fmt.Printf("GetWithdrawalsByUsername error=%s", err.Error())
+		return []models.Order{}, nil
+	}
+	defer rows.Close()
+
+	res := make([]models.Order, 0)
+
+	for rows.Next() {
+		var order models.Order
+
+		err := rows.Scan(&order.Number, &order.Username, &order.Status, &order.Accrual, &order.UploadedAt)
+		if err != nil {
+			fmt.Printf("GetWithdrawalsByUsername error=%s", err.Error())
+			return nil, err
+		}
+		// Convert negative accrual to positive
+		order.Accrual = math.Abs(order.Accrual) // Assuming Accrual is a float
+		// If Accrual is an int, use: order.Accrual = -order.Accrual
+
+		res = append(res, order)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
-func (r *Repository) GetBalance(string, string) (bool, error) {
-	return true, nil
+func (r *Repository) GetUserBalanceAndWithdrawals(ctx context.Context, username string) (float64, float64, error) {
+	query := `
+		SELECT 
+			COALESCE(SUM(accrual), 0), 
+			COALESCE(SUM(CASE WHEN accrual < 0 THEN accrual ELSE 0 END), 0) 
+		FROM orders 
+		WHERE username = $1;`
+
+	var balance, withdrawals float64
+	err := r.db.QueryRowContext(ctx, query, username).Scan(&balance, &withdrawals)
+	if err != nil {
+		fmt.Printf("GetUserBalanceAndWithdrawals error: %s\n", err.Error())
+		return 0, 0, err
+	}
+
+	// Convert withdrawals to positive since they are stored as negative values
+	return balance, -withdrawals, nil
 }
