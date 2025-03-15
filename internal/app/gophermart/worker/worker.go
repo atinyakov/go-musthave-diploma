@@ -98,7 +98,7 @@ func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers in
 	}
 
 	// Main routine to update orders
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	var messages []models.Order
@@ -115,6 +115,8 @@ func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers in
 					fmt.Printf("Failed to update orders: %s\n", err)
 				}
 				messages = messages[:0] // Reset the messages slice
+			} else {
+				continue
 			}
 		}
 	}
