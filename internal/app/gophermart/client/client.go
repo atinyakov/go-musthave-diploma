@@ -42,14 +42,14 @@ func (c *AccrualClient) Request(url string) (*models.Order, error) {
 	req.SetHeader("Client", "gentleman")
 	req.SetHeader("Method", "GET")
 
-	fmt.Println("sedning new request")
+	fmt.Println("sedning new request", req)
 	res, err := req.Send()
 	if err != nil {
 		fmt.Printf("Request error: %s\n", err)
 		return nil, err
 	}
 	if !res.Ok {
-		fmt.Printf("Invalid server response: %d\n", res.StatusCode)
+		fmt.Printf("Invalid server response: %d %s\n", res.StatusCode, res)
 		return nil, err
 	}
 	fmt.Println("Got responce")
