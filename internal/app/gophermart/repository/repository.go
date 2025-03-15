@@ -164,17 +164,17 @@ func (r *Repository) UpdateOrders(ctx context.Context, os []models.Order) error 
 
 	stmt, err := tx.Prepare(`
 		UPDATE orders
-		SET status = $1
-		WHERE username = $2;
+		SET status = $1, accrual = $2
+		WHERE number = $3;
 	`)
 	if err != nil {
 		return err
 	}
 
+	defer stmt.Close()
 	for _, o := range os {
 
-		defer stmt.Close()
-		_, err = stmt.ExecContext(ctx, o.Status, o.Username)
+		_, err = stmt.ExecContext(ctx, o.Status, o.Accrual, o.Number)
 
 		if err != nil {
 			return err

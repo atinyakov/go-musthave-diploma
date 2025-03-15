@@ -34,7 +34,7 @@ func NewAccrualTaskWorker(repo Repo, client Client) *AccrualTaskWorker {
 }
 
 func (s *AccrualTaskWorker) StartOrderFetcher(ctx context.Context) {
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
@@ -66,6 +66,7 @@ func (s *AccrualTaskWorker) StartOrderFetcher(ctx context.Context) {
 
 func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers int) {
 	var wg sync.WaitGroup
+	var messages []models.Order
 
 	// Worker pool
 	for i := 0; i < numWorkers; i++ {
@@ -73,35 +74,35 @@ func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers in
 		go func() {
 			defer wg.Done()
 
-			// var messages []models.Order
-
 			for {
 				select {
 				case <-ctx.Done():
 					fmt.Println("Worker shutting down...")
 					return
 				case msg := <-s.in:
-					fmt.Println("Worker GOT NEW ORDER...")
+					fmt.Println("Worker GOT NEW ORDER...", msg)
 
-					_, err := s.client.Request(msg.Number)
+					res, err := s.client.Request(msg.Number)
 					if err != nil {
 						fmt.Printf("Failed to update order %s: %s\n", msg.Number, err)
-						continue
+						return
 					}
 
-					// if orderResponse != nil {
-					// 	messages = append(messages, *orderResponse)
-					// }
+					if res != nil {
+						fmt.Println(res)
+
+						messages = append(messages, *res)
+					}
 				}
 			}
 		}()
 	}
 
 	// Main routine to update orders
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	var messages []models.Order
+	// var messages []models.Order
 	for {
 		select {
 		case <-ctx.Done():
