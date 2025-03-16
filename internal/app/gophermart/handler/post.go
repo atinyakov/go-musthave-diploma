@@ -89,8 +89,8 @@ func (ph *PostHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	isValid, err := ph.service.Login(reqData.Login, reqData.Password)
 	if err != nil {
-		if err.Error() == "invalid username or password" { //TODO: fix error
-			http.Error(w, err.Error(), http.StatusUnauthorized) // 401 Unauthorized
+		if err.Error() == "invalid username or password" {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}

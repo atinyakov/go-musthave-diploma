@@ -3,7 +3,9 @@ package auth
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"strings"
 )
 
 // HashPassword generates a hashed password using SHA-256 (NOT recommended for production)
@@ -34,19 +36,23 @@ func CheckPassword(hashedPassword, password string) bool {
 		return false
 	}
 
-	salt := []byte(parts[0])
-	expectedHash := []byte(parts[1])
+	// Convert hex-encoded salt and expected hash back to bytes
+	salt, err1 := hex.DecodeString(parts[0])
+	expectedHash, err2 := hex.DecodeString(parts[1])
+	if err1 != nil || err2 != nil {
+		return false
+	}
 
-	// Combine password and salt, then hash it
+	// Hash the input password with the extracted salt
 	hash := sha256.New()
 	hash.Write(salt)
 	hash.Write([]byte(password))
 
 	// Compare the generated hash with the stored one
-	return string(expectedHash) == string(hash.Sum(nil))
+	return string(hash.Sum(nil)) == string(expectedHash)
 }
 
 // Helper function to split the salt and hash from the formatted string
 func split(s string) []string {
-	return []string{}
+	return strings.Split(s, "$")
 }

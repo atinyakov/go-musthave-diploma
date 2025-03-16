@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	// "os/exec"
-
-	// "runtime"
-
 	"github.com/atinyakov/go-musthave-diploma/internal/app/config"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/client"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/handler"
