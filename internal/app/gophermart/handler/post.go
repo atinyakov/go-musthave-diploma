@@ -165,6 +165,7 @@ func (ph *PostHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var mr *malformedRequest
 		if errors.As(err, &mr) {
+			fmt.Println(mr.msg, mr.status)
 			http.Error(w, mr.msg, mr.status)
 			return
 		}
@@ -177,9 +178,9 @@ func (ph *PostHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(422)
-		w.Write([]byte(fmt.Sprintf("error fetching articles: %v", err)))
+		w.Write([]byte(fmt.Sprintf("error balance widtdraw: %v", err)))
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
+	w.WriteHeader(http.StatusOK)
 }

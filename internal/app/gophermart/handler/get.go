@@ -9,7 +9,7 @@ import (
 )
 
 type ServiceGet interface {
-	GetWithdrawals(string) ([]dto.WithdrawalResponceItem, error)
+	GetWithdrawals(string) ([]dto.WithdrawalResponseItem, error)
 	GetBalance(string) (dto.BalanceResponce, error)
 	GetOrdersByUsername(string) ([]models.Order, error)
 }

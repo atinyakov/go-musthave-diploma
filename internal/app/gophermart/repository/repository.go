@@ -154,12 +154,7 @@ func (r *Repository) UpdateOrders(ctx context.Context, os []models.Order) error 
 	}
 
 	defer func() {
-		err := tx.Rollback()
-		if err != nil {
-			// r.logger.Error("ROLLBACK error=", zap.String("error", err.Error()))
-			// return err
-			fmt.Println(err.Error())
-		}
+		_ = tx.Rollback()
 	}()
 
 	stmt, err := tx.Prepare(`
@@ -182,10 +177,6 @@ func (r *Repository) UpdateOrders(ctx context.Context, os []models.Order) error 
 	}
 
 	return tx.Commit()
-}
-
-func (r *Repository) GetOrdersByID() {
-	// return true, nil
 }
 
 func (r *Repository) GetWithdrawalsByUsername(ctx context.Context, username string) ([]models.Order, error) {

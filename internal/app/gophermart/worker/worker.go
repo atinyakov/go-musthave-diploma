@@ -25,7 +25,7 @@ type AccrualTaskWorker struct {
 }
 
 func NewAccrualTaskWorker(repo Repo, client Client) *AccrualTaskWorker {
-	ch := make(chan models.Order, 100) // Buffered channel to avoid blocking
+	ch := make(chan models.Order, 100)
 	return &AccrualTaskWorker{
 		in:     ch,
 		client: client,
@@ -102,7 +102,6 @@ func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers in
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	// var messages []models.Order
 	for {
 		select {
 		case <-ctx.Done():
@@ -115,7 +114,7 @@ func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers in
 				if err != nil {
 					fmt.Printf("Failed to update orders: %s\n", err)
 				}
-				messages = messages[:0] // Reset the messages slice
+				messages = messages[:0]
 			} else {
 				continue
 			}

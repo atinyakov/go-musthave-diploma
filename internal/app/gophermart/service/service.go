@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"math"
 	"strconv"
 	"time"
 
@@ -43,7 +44,7 @@ func (r *Service) Register(login string, password string) error {
 	err = r.repo.CreateUser(login, hashedPassword)
 
 	if err == repository.ErrUserExists {
-		return err // Pass it to handler
+		return err
 	} else if err != nil {
 		return errors.New("failed to create user")
 	}
@@ -104,7 +105,12 @@ func (r *Service) GetOrdersByUsername(username string) ([]models.Order, error) {
 }
 
 func (r *Service) CreateWidthraw(req dto.WithdrawalRequest, username string) error {
-	isValid := luhn.Valid(req.Order)
+	order, err := strconv.Atoi(req.Order)
+	if err != nil {
+		return err
+	}
+
+	isValid := luhn.Valid(order)
 
 	if !isValid {
 		return ErrInvalidLuhn
@@ -113,7 +119,7 @@ func (r *Service) CreateWidthraw(req dto.WithdrawalRequest, username string) err
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, _, err := r.repo.CreateOrder(ctx, models.Order{Number: strconv.Itoa(req.Order), Username: username, Accrual: -float64(req.Sum)})
+	_, _, err = r.repo.CreateOrder(ctx, models.Order{Number: req.Order, Username: username, Accrual: -float64(req.Sum)})
 
 	return err
 }
@@ -127,25 +133,29 @@ func (r *Service) GetBalance(username string) (dto.BalanceResponce, error) {
 		return dto.BalanceResponce{}, err
 	}
 
-	return dto.BalanceResponce{Current: float32(balance), Withdrawn: int(widthdraw)}, nil
+	return dto.BalanceResponce{Current: float32(RoundTo(balance, 2)), Withdrawn: float32(RoundTo(widthdraw, 2))}, nil
 }
 
-func (r *Service) GetWithdrawals(username string) ([]dto.WithdrawalResponceItem, error) {
+func (r *Service) GetWithdrawals(username string) ([]dto.WithdrawalResponseItem, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	widthdrawals, err := r.repo.GetWithdrawalsByUsername(ctx, username)
 
 	if err != nil {
-		return []dto.WithdrawalResponceItem{}, err
+		return []dto.WithdrawalResponseItem{}, err
 	}
 
-	var res []dto.WithdrawalResponceItem
+	var res []dto.WithdrawalResponseItem
 
 	for _, w := range widthdrawals {
-		order, _ := strconv.Atoi(w.Number)
-		res = append(res, dto.WithdrawalResponceItem{ProcessedAt: w.UploadedAt, Order: order, Sum: int(w.Accrual)})
+		res = append(res, dto.WithdrawalResponseItem{ProcessedAt: w.UploadedAt, Order: w.Number, Sum: RoundTo(w.Accrual, 2)})
 	}
 
 	return res, nil
+}
+
+func RoundTo(value float64, places int) float64 {
+	factor := math.Pow(10, float64(places))
+	return math.Round(value*factor) / factor
 }
