@@ -11,7 +11,7 @@ import (
 
 type Repo interface {
 	UpdateOrders(ctx context.Context, os []models.Order) error
-	GetOrdersByStatus(ctx context.Context, status models.OrderStatus) ([]models.Order, error)
+	GetOrdersByStatus(ctx context.Context) ([]models.Order, error)
 }
 
 type Client interface {
@@ -47,7 +47,7 @@ func (s *AccrualTaskWorker) StartOrderFetcher(ctx context.Context) {
 			defer cancel()
 			fmt.Println("StartOrderFetcher getting orders...")
 
-			newOrders, err := s.repo.GetOrdersByStatus(ctx, models.StatusNew)
+			newOrders, err := s.repo.GetOrdersByStatus(ctx)
 			if err != nil {
 				fmt.Printf("Failed to fetch new orders: %s\n", err)
 				continue
@@ -67,6 +67,7 @@ func (s *AccrualTaskWorker) StartOrderFetcher(ctx context.Context) {
 func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers int) {
 	var wg sync.WaitGroup
 	var messages []models.Order
+	var mu sync.Mutex
 
 	// Worker pool
 	for i := 0; i < numWorkers; i++ {
@@ -90,8 +91,9 @@ func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers in
 
 					if res != nil {
 						fmt.Println(res)
-
+						mu.Lock()
 						messages = append(messages, *res)
+						mu.Unlock()
 					}
 				}
 			}
@@ -114,7 +116,10 @@ func (s *AccrualTaskWorker) StartOrderUpdater(ctx context.Context, numWorkers in
 				if err != nil {
 					fmt.Printf("Failed to update orders: %s\n", err)
 				}
+				mu.Lock()
 				messages = messages[:0]
+				mu.Unlock()
+
 			} else {
 				continue
 			}

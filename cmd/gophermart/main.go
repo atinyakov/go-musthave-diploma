@@ -24,8 +24,8 @@ func main() {
 	repository := repository.New(db)
 	worker := worker.NewAccrualTaskWorker(repository, client)
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel() // Ensures cleanup on exit
 	defer cancel()
+
 	go worker.StartOrderFetcher(ctx)
 	go worker.StartOrderUpdater(ctx, 10)
 	fmt.Println("workers created")

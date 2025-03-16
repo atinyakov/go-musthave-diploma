@@ -88,8 +88,8 @@ func (r *Repository) CreateOrder(ctx context.Context, newOrder models.Order) (*m
 	return createdOrder, false, nil
 }
 
-func (r *Repository) GetOrdersByStatus(ctx context.Context, status models.OrderStatus) ([]models.Order, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT number, username, status, accrual, uploaded_at FROM orders WHERE status = $1", status)
+func (r *Repository) GetOrdersByStatus(ctx context.Context) ([]models.Order, error) {
+	rows, err := r.db.QueryContext(ctx, "SELECT number, username, status, accrual, uploaded_at FROM orders WHERE status <> $1", models.StatusProcessed)
 	if err != nil {
 		fmt.Printf("GetOrdersByStatus error=%s", err.Error())
 		return []models.Order{}, nil
