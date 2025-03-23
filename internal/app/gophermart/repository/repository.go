@@ -8,6 +8,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/gookit/slog"
+
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/models"
 	"github.com/atinyakov/go-musthave-diploma/internal/db"
 )
@@ -91,7 +93,7 @@ func (r *Repository) CreateOrder(ctx context.Context, newOrder models.Order) (*m
 func (r *Repository) GetOrdersByStatus(ctx context.Context) ([]models.Order, error) {
 	rows, err := r.db.QueryContext(ctx, "SELECT number, username, status, accrual, uploaded_at FROM orders WHERE status <> $1", models.StatusProcessed)
 	if err != nil {
-		fmt.Printf("GetOrdersByStatus error=%s", err.Error())
+		slog.Error("GetOrdersByStatus error=%s", err.Error())
 		return []models.Order{}, nil
 	}
 	defer rows.Close()
@@ -103,7 +105,7 @@ func (r *Repository) GetOrdersByStatus(ctx context.Context) ([]models.Order, err
 
 		err := rows.Scan(&order.Number, &order.Username, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
-			fmt.Printf("GetOrdersByStatus error=%s", err.Error())
+			slog.Error("GetOrdersByStatus error=%s", err.Error())
 			return nil, err
 		}
 
@@ -121,7 +123,7 @@ func (r *Repository) GetOrdersByStatus(ctx context.Context) ([]models.Order, err
 func (r *Repository) GetOrdersByUsername(ctx context.Context, username string) ([]models.Order, error) {
 	rows, err := r.db.QueryContext(ctx, "SELECT number, username, status, accrual, uploaded_at FROM orders WHERE username = $1", username)
 	if err != nil {
-		fmt.Printf("GetOrdersByUsername error=%s", err.Error())
+		slog.Error("GetOrdersByUsername error=%s", err.Error())
 		return []models.Order{}, nil
 	}
 	defer rows.Close()
@@ -133,7 +135,7 @@ func (r *Repository) GetOrdersByUsername(ctx context.Context, username string) (
 
 		err := rows.Scan(&order.Number, &order.Username, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
-			fmt.Printf("GetOrdersByUsername error=%s", err.Error())
+			slog.Error("GetOrdersByUsername error=%s", err.Error())
 			return nil, err
 		}
 
@@ -188,7 +190,7 @@ func (r *Repository) GetWithdrawalsByUsername(ctx context.Context, username stri
 
 	rows, err := r.db.QueryContext(ctx, query, username)
 	if err != nil {
-		fmt.Printf("GetWithdrawalsByUsername error=%s", err.Error())
+		slog.Error("GetWithdrawalsByUsername error=%s", err.Error())
 		return []models.Order{}, nil
 	}
 	defer rows.Close()
@@ -200,7 +202,7 @@ func (r *Repository) GetWithdrawalsByUsername(ctx context.Context, username stri
 
 		err := rows.Scan(&order.Number, &order.Username, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
-			fmt.Printf("GetWithdrawalsByUsername error=%s", err.Error())
+			slog.Error("GetWithdrawalsByUsername error=%s", err.Error())
 			return nil, err
 		}
 		// Convert negative accrual to positive
@@ -228,7 +230,7 @@ func (r *Repository) GetUserBalanceAndWithdrawals(ctx context.Context, username 
 	var balance, withdrawals float64
 	err := r.db.QueryRowContext(ctx, query, username).Scan(&balance, &withdrawals)
 	if err != nil {
-		fmt.Printf("GetUserBalanceAndWithdrawals error: %s\n", err.Error())
+		slog.Error("GetUserBalanceAndWithdrawals error: %s\n", err.Error())
 		return 0, 0, err
 	}
 

@@ -3,8 +3,9 @@ package worker
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
+
+	"github.com/gookit/slog"
 
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/client"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/models"
@@ -38,16 +39,16 @@ func (s *AccrualTaskWorker) StartOrderFetcher(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("StartOrderFetcher shutting down...")
+			slog.Info("StartOrderFetcher shutting down...")
 			return
 		case <-ticker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
-			fmt.Println("StartOrderFetcher getting orders...")
+			slog.Info("StartOrderFetcher getting orders...")
 
 			newOrders, err := s.repo.GetOrdersByStatus(ctx)
 			if err != nil {
-				fmt.Printf("Failed to fetch new orders: %s\n", err)
+				slog.Error("Failed to fetch new orders: %s\n", err)
 				continue
 			}
 
@@ -60,14 +61,14 @@ func (s *AccrualTaskWorker) StartOrderFetcher(ctx context.Context) {
 
 				var rae client.RetryAfterErr
 				if errors.As(err, &rae) {
-					fmt.Printf("sleeping %d seconds\n", rae.T)
+					slog.Info("sleeping %d seconds\n", rae.T)
 					time.Sleep(time.Duration(rae.T * int(time.Second)))
 				}
 
 				if res != nil {
 					err = s.repo.UpdateOrders(ctx, append([]models.Order{}, *res))
 					if err != nil {
-						fmt.Printf("Failed to update orders: %s\n", err)
+						slog.Error("Failed to update orders: %s\n", err)
 					}
 				}
 			}

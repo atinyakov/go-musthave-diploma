@@ -2,8 +2,9 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
+
+	"github.com/gookit/slog"
 
 	_ "github.com/lib/pq"
 )
@@ -42,7 +43,7 @@ func InitDB(dsn string) *sql.DB {
 		log.Fatalf("PostgreSQL is not reachable: %v", err)
 	}
 
-	fmt.Println("Connected to PostgreSQL successfully!")
+	slog.Info("Connected to PostgreSQL successfully!")
 
 	_, err = DB.Exec(schema1)
 	if err != nil {

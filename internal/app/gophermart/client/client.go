@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gookit/slog"
+
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/dto"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/models"
 )
@@ -34,7 +36,7 @@ func (c *AccrualClient) Request(url string) (*models.Order, error) {
 
 	request, err := http.NewRequest(http.MethodGet, c.baseURL+url, nil)
 	if err != nil {
-		fmt.Println(err)
+		slog.Error(err.Error())
 		panic(err)
 	}
 

@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+
+	"github.com/gookit/slog"
 
 	"github.com/atinyakov/go-musthave-diploma/internal/app/config"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/client"
@@ -18,7 +19,6 @@ import (
 func main() {
 	config := config.LoadConfig()
 	db := db.InitDB(config.DatabaseURI)
-	fmt.Println(config.AccrualSystemAddress + "/api/orders/")
 	client := client.New(config.AccrualSystemAddress + "/api/orders/")
 
 	repository := repository.New(db)
@@ -28,16 +28,15 @@ func main() {
 
 	go worker.StartOrderFetcher(ctx)
 
-	fmt.Println("workers created")
+	slog.Info("workers created")
 
 	service := service.New(repository)
 	postHandler := handler.NewPost(service)
 	getHandler := handler.NewGet(service)
 	r := server.New(postHandler, getHandler)
-	fmt.Println("Starting server")
+	slog.Info("Starting server")
 
 	err := http.ListenAndServe(config.RunAddress, r)
-	fmt.Println("Running server")
 	if err != nil {
 		panic(err)
 	}

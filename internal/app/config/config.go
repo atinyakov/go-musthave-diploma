@@ -2,9 +2,10 @@ package config
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
+
+	"github.com/gookit/slog"
 
 	"github.com/joho/godotenv"
 )
@@ -40,7 +41,7 @@ func LoadConfig() *Config {
 		AccrualSystemAddress: *accrualSystemAddress,
 	}
 
-	fmt.Printf("Конфигурация загружена: %+v\n", AppConfig)
+	slog.Info("config loaded: %+v\n", AppConfig)
 
 	return AppConfig
 }

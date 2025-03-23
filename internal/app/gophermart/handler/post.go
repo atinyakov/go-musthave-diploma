@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gookit/slog"
+
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/dto"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/repository"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/service"
@@ -165,7 +167,7 @@ func (ph *PostHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var mr *malformedRequest
 		if errors.As(err, &mr) {
-			fmt.Println(mr.msg, mr.status)
+			slog.Error(mr.msg, strconv.Itoa(mr.status))
 			http.Error(w, mr.msg, mr.status)
 			return
 		}
