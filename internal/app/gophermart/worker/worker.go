@@ -2,9 +2,11 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/client"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/models"
 )
 
@@ -55,9 +57,11 @@ func (s *AccrualTaskWorker) StartOrderFetcher(ctx context.Context) {
 
 			for _, order := range newOrders {
 				res, err := s.client.Request(order.Number)
-				if err != nil {
-					fmt.Printf("Failed to update order %s: %s\n", order.Number, err)
-					return
+
+				var rae client.RetryAfterErr
+				if errors.As(err, &rae) {
+					fmt.Printf("sleeping %d seconds\n", rae.T)
+					time.Sleep(time.Duration(rae.T * int(time.Second)))
 				}
 
 				if res != nil {
