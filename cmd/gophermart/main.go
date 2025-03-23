@@ -27,7 +27,7 @@ func main() {
 	defer cancel()
 
 	go worker.StartOrderFetcher(ctx)
-	go worker.StartOrderUpdater(ctx, 10)
+
 	fmt.Println("workers created")
 
 	service := service.New(repository)
