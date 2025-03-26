@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"reflect"
 	"strings"
 )
 
@@ -73,43 +72,6 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) err
 	err = dec.Decode(&struct{}{})
 	if !errors.Is(err, io.EOF) {
 		msg := "Request body must only contain a single JSON object"
-		return &malformedRequest{status: http.StatusBadRequest, msg: msg}
-	}
-
-	// **Check for missing fields**
-	if err := validateStruct(dst); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// **Helper function to check required fields**
-func validateStruct(dst interface{}) error {
-	v := reflect.ValueOf(dst)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	if v.Kind() != reflect.Struct {
-		return nil
-	}
-
-	t := v.Type()
-	var missingFields []string
-
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		tag := t.Field(i).Tag.Get("json")
-		if tag == "" || tag == "-" {
-			continue
-		}
-		if field.IsZero() {
-			missingFields = append(missingFields, tag)
-		}
-	}
-
-	if len(missingFields) > 0 {
-		msg := fmt.Sprintf("Missing required fields: %s", strings.Join(missingFields, ", "))
 		return &malformedRequest{status: http.StatusBadRequest, msg: msg}
 	}
 

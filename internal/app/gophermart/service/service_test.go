@@ -50,13 +50,13 @@ func TestLogin(t *testing.T) {
 	hashedPassword, _ := auth.HashPassword(password)
 
 	// Case where user exists and password matches
-	mockRepo.EXPECT().Login(login).Return(hashedPassword, nil)
+	mockRepo.EXPECT().GetPasswordHashByUsername(login).Return(hashedPassword, nil)
 	valid, err := srv.Login(login, password)
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Case where user doesn't exist
-	mockRepo.EXPECT().Login(login).Return("", repository.ErrUserNotFound)
+	mockRepo.EXPECT().GetPasswordHashByUsername(login).Return("", repository.ErrUserNotFound)
 	valid, err = srv.Login(login, password)
 	assert.EqualError(t, err, "invalid username or password")
 	assert.False(t, valid)

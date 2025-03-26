@@ -86,6 +86,21 @@ func (mr *MockRepositoryMockRecorder) GetOrdersByUsername(ctx, username any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrdersByUsername", reflect.TypeOf((*MockRepository)(nil).GetOrdersByUsername), ctx, username)
 }
 
+// GetPasswordHashByUsername mocks base method.
+func (m *MockRepository) GetPasswordHashByUsername(arg0 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPasswordHashByUsername", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPasswordHashByUsername indicates an expected call of GetPasswordHashByUsername.
+func (mr *MockRepositoryMockRecorder) GetPasswordHashByUsername(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPasswordHashByUsername", reflect.TypeOf((*MockRepository)(nil).GetPasswordHashByUsername), arg0)
+}
+
 // GetUserBalanceAndWithdrawals mocks base method.
 func (m *MockRepository) GetUserBalanceAndWithdrawals(ctx context.Context, username string) (float64, float64, error) {
 	m.ctrl.T.Helper()
@@ -115,19 +130,4 @@ func (m *MockRepository) GetWithdrawalsByUsername(ctx context.Context, username 
 func (mr *MockRepositoryMockRecorder) GetWithdrawalsByUsername(ctx, username any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithdrawalsByUsername", reflect.TypeOf((*MockRepository)(nil).GetWithdrawalsByUsername), ctx, username)
-}
-
-// Login mocks base method.
-func (m *MockRepository) Login(arg0 string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Login", arg0)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Login indicates an expected call of Login.
-func (mr *MockRepositoryMockRecorder) Login(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockRepository)(nil).Login), arg0)
 }

@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
-
-	"github.com/gookit/slog"
 
 	"github.com/atinyakov/go-musthave-diploma/internal/app/config"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/client"

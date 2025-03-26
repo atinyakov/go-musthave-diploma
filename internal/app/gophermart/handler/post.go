@@ -4,15 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
-
-	"github.com/gookit/slog"
 
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/dto"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/repository"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/service"
 	"github.com/atinyakov/go-musthave-diploma/pkg/auth"
+	"github.com/atinyakov/go-musthave-diploma/pkg/middleware"
 )
 
 type ServicePost interface {
@@ -50,7 +50,7 @@ func (ph *PostHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	err = ph.service.Register(reqData.Login, reqData.Password)
 
-	if err == repository.ErrUserExists {
+	if errors.Is(err, repository.ErrUserExists) {
 		http.Error(w, "User already exists", http.StatusConflict)
 		return
 	}
@@ -103,6 +103,8 @@ func (ph *PostHandler) Login(w http.ResponseWriter, r *http.Request) {
 		// Generate JWT
 		token, err := auth.GenerateJWT(reqData.Login)
 		if err != nil {
+			slog.Error("Error generating token", slog.String("error", err.Error()))
+
 			http.Error(w, "Error generating token", http.StatusInternalServerError)
 			return
 		}
@@ -119,7 +121,7 @@ func (ph *PostHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ph *PostHandler) Orders(w http.ResponseWriter, r *http.Request) {
-	username := r.Header.Get("X-User")
+	username := r.Context().Value(middleware.UserContextKey).(string)
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -128,22 +130,27 @@ func (ph *PostHandler) Orders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderNumber, _ := strconv.Atoi(string(body))
+	orderNumber, err := strconv.Atoi(string(body))
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+
+		return
+	}
 
 	err = ph.service.CreateOrder(orderNumber, username)
 
-	if err == service.ErrInvalidLuhn {
+	if errors.Is(err, service.ErrInvalidLuhn) {
 		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
 		return
 
 	}
 
-	if err == service.ErrExists {
+	if errors.Is(err, service.ErrExists) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	if err == service.ErrNotBelongsToUser {
+	if errors.Is(err, service.ErrNotBelongsToUser) {
 		http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
 
 		return
@@ -159,7 +166,7 @@ func (ph *PostHandler) Orders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ph *PostHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
-	username := r.Header.Get("X-User")
+	username := r.Context().Value(middleware.UserContextKey).(string)
 
 	var reqData dto.WithdrawalRequest
 
@@ -167,7 +174,7 @@ func (ph *PostHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var mr *malformedRequest
 		if errors.As(err, &mr) {
-			slog.Error(mr.msg, strconv.Itoa(mr.status))
+			slog.Error(mr.msg, slog.String("status", strconv.Itoa(mr.status)))
 			http.Error(w, mr.msg, mr.status)
 			return
 		}

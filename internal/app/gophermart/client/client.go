@@ -1,12 +1,12 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
-
-	"github.com/gookit/slog"
 
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/dto"
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/models"
@@ -32,9 +32,9 @@ func New(baseURL string) *AccrualClient {
 	}
 }
 
-func (c *AccrualClient) Request(url string) (*models.Order, error) {
+func (c *AccrualClient) Request(ctx context.Context, url string) (*models.Order, error) {
 
-	request, err := http.NewRequest(http.MethodGet, c.baseURL+url, nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+url, nil)
 	if err != nil {
 		slog.Error(err.Error())
 		panic(err)
@@ -68,5 +68,5 @@ func (c *AccrualClient) Request(url string) (*models.Order, error) {
 		return nil, err
 	}
 
-	return &models.Order{Accrual: accrual.Accrual, Status: models.OrderStatus(accrual.Status), Number: accrual.Order}, err
+	return &models.Order{Accrual: accrual.Accrual, Status: models.OrderStatus(accrual.Status), Number: accrual.Order}, nil
 }

@@ -1,11 +1,16 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/atinyakov/go-musthave-diploma/pkg/auth"
 )
+
+type contextKey string
+
+const UserContextKey contextKey = "user"
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,8 +29,8 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		r.Header.Set("X-User", claims.Username)
+		ctx := context.WithValue(r.Context(), UserContextKey, claims.Username)
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -3,8 +3,7 @@ package db
 import (
 	"database/sql"
 	"log"
-
-	"github.com/gookit/slog"
+	"log/slog"
 
 	_ "github.com/lib/pq"
 )

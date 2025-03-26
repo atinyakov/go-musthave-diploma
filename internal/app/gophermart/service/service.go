@@ -16,7 +16,7 @@ import (
 
 type Repository interface {
 	CreateUser(string, string) error
-	Login(string) (string, error)
+	GetPasswordHashByUsername(string) (string, error)
 	CreateOrder(context.Context, models.Order) (*models.Order, bool, error)
 	GetOrdersByUsername(ctx context.Context, username string) ([]models.Order, error)
 	GetWithdrawalsByUsername(ctx context.Context, username string) ([]models.Order, error)
@@ -43,7 +43,7 @@ func (r *Service) Register(login string, password string) error {
 
 	err = r.repo.CreateUser(login, hashedPassword)
 
-	if err == repository.ErrUserExists {
+	if errors.Is(err, repository.ErrUserExists) {
 		return err
 	} else if err != nil {
 		return errors.New("failed to create user")
@@ -53,8 +53,8 @@ func (r *Service) Register(login string, password string) error {
 }
 
 func (r *Service) Login(login string, password string) (bool, error) {
-	hashedPassword, err := r.repo.Login(login)
-	if err == repository.ErrUserNotFound {
+	hashedPassword, err := r.repo.GetPasswordHashByUsername(login)
+	if errors.Is(err, repository.ErrUserNotFound) {
 		return false, errors.New("invalid username or password")
 	}
 	if err != nil {
@@ -156,6 +156,6 @@ func (r *Service) GetWithdrawals(username string) ([]dto.WithdrawalResponseItem,
 }
 
 func RoundTo(value float64, places int) float64 {
-	factor := math.Pow(10, float64(places))
+	factor := math.Pow10(places)
 	return math.Round(value*factor) / factor
 }
