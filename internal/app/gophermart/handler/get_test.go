@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -33,6 +34,26 @@ func TestGetOrders(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
+	t.Run("no content", func(t *testing.T) {
+		mockService.EXPECT().GetOrdersByUsername("testuser").Return([]models.Order{}, nil)
+		req := httptest.NewRequest(http.MethodGet, "/orders", nil)
+		req = req.WithContext(context.WithValue(req.Context(), middleware.UserContextKey, "testuser"))
+		w := httptest.NewRecorder()
+
+		h.Orders(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+	})
+	t.Run("err", func(t *testing.T) {
+		mockService.EXPECT().GetOrdersByUsername("testuser").Return([]models.Order{}, errors.New("123"))
+		req := httptest.NewRequest(http.MethodGet, "/orders", nil)
+		req = req.WithContext(context.WithValue(req.Context(), middleware.UserContextKey, "testuser"))
+		w := httptest.NewRecorder()
+
+		h.Orders(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
 }
 
 func TestBalance(t *testing.T) {
@@ -52,6 +73,16 @@ func TestBalance(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
+	t.Run("error", func(t *testing.T) {
+		mockService.EXPECT().GetBalance("testuser").Return(dto.BalanceResponce{}, errors.New("123"))
+		req := httptest.NewRequest(http.MethodGet, "/balance", nil)
+		req = req.WithContext(context.WithValue(req.Context(), middleware.UserContextKey, "testuser"))
+		w := httptest.NewRecorder()
+
+		h.Balance(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
 }
 
 func TestWithdrawals(t *testing.T) {
@@ -70,5 +101,25 @@ func TestWithdrawals(t *testing.T) {
 		h.Withdrawals(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
+	})
+	t.Run("no content", func(t *testing.T) {
+		mockService.EXPECT().GetWithdrawals("testuser").Return([]dto.WithdrawalResponseItem{}, nil)
+		req := httptest.NewRequest(http.MethodGet, "/withdrawals", nil)
+		req = req.WithContext(context.WithValue(req.Context(), middleware.UserContextKey, "testuser"))
+		w := httptest.NewRecorder()
+
+		h.Withdrawals(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+	})
+	t.Run("error", func(t *testing.T) {
+		mockService.EXPECT().GetWithdrawals("testuser").Return([]dto.WithdrawalResponseItem{}, errors.New("123"))
+		req := httptest.NewRequest(http.MethodGet, "/withdrawals", nil)
+		req = req.WithContext(context.WithValue(req.Context(), middleware.UserContextKey, "testuser"))
+		w := httptest.NewRecorder()
+
+		h.Withdrawals(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 }

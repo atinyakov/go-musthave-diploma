@@ -186,7 +186,7 @@ func (ph *PostHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 	err = ph.service.CreateWidthraw(reqData, username)
 
 	if err != nil {
-		w.WriteHeader(422)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		w.Write([]byte(fmt.Sprintf("error balance widtdraw: %v", err)))
 		return
 	}

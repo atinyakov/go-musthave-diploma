@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/atinyakov/go-musthave-diploma/internal/app/gophermart/models"
-	"github.com/atinyakov/go-musthave-diploma/internal/db"
 )
 
 type Repository struct {
@@ -43,7 +42,7 @@ func (r *Repository) CreateUser(username, password string) error {
 
 func (r *Repository) GetPasswordHashByUsername(username string) (string, error) {
 	var hashedPassword string
-	err := db.DB.QueryRow("SELECT password_hash FROM users WHERE username = $1", username).Scan(&hashedPassword)
+	err := r.db.QueryRow("SELECT password_hash FROM users WHERE username = $1", username).Scan(&hashedPassword)
 	if err == sql.ErrNoRows {
 		return "", ErrUserNotFound // User doesn't exist
 	}
